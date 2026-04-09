@@ -14,3 +14,4 @@ reports/
 *.db
 *.sqlite3
 /.github/workflows/*.log
+submission_package.zip
