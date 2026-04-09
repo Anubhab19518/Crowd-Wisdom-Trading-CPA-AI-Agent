@@ -61,3 +61,52 @@ The task command should be the default container `CMD` which executes `python he
 
 Submission
 - Add your GitHub repo link and include API tokens as required by the assignment deliverables.
+
+Run locally (quick)
+1. Copy `.env.example` to `.env` and fill values (do NOT commit `.env`):
+
+   - `OPENROUTER_API_KEY` — OpenRouter API key (for LLM tasks)
+   - `OPENROUTER_MODEL` — recommended: `meta-llama/llama-3.3-70b-instruct:free`
+   - `APIFY_TOKEN` — Apify API token (optional; local scrapers are used by default)
+
+2. Create and activate virtualenv, install deps:
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+3. (Optional) fetch provided data sources (clones GitHub repos into `src/data/sources`):
+
+```powershell
+python scripts/fetch_sources.py
+```
+
+4. Run the demo pipeline locally (loads `samples/sample_input.json` and writes a report into `reports/`):
+
+```powershell
+python -u run_demo.py
+```
+
+5. Run tests:
+
+```powershell
+pip install pytest
+pytest -q
+```
+
+6. Build Docker image locally (optional):
+
+```powershell
+docker build -t cpa-agent:latest .
+docker run --env-file .env cpa-agent:latest
+```
+
+Notes
+- The demo prefers local scrapers (`USE_LOCAL_SCRAPER=true`) to avoid paid Apify actors. Set `USE_LOCAL_SCRAPER=false` to attempt Apify actor calls when `APIFY_TOKEN` is set.
+- The project writes a local SQLite DB at `src/data/agents.db` by default.
+- CI builds and runs the demo and uploads `cpa-artifacts.zip` (reports + DB) as a workflow artifact.
+
+
