@@ -1,0 +1,18 @@
+[
+  {
+    "id": "doc-001",
+    "source": "gdrive",
+    "filename": "invoice_abc_co_2025-01-15.pdf",
+    "date": "2025-01-15",
+    "raw_text_snippet": "Invoice from ABC Co. Bill of Lading: ...",
+    "metadata": {"vendor": "ABC Co", "amount": 12500.0, "currency": "USD", "route": "Shanghai -> Los Angeles"}
+  },
+  {
+    "id": "doc-002",
+    "source": "email",
+    "filename": "bol_xyz_2025-01-20.pdf",
+    "date": "2025-01-20",
+    "raw_text_snippet": "Bill of lading XYZ shipping container ...",
+    "metadata": {"vendor": "XYZ Shipping", "amount": 9800.0, "currency": "USD", "route": "Busan -> Long Beach"}
+  }
+]

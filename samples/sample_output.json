@@ -1,0 +1,18 @@
+{
+  "summary": {
+    "avg_cost": 11150.0,
+    "count": 2
+  },
+  "anomalies": [],
+  "market": {
+    "fbx": {
+      "date": "2026-04-09",
+      "fbx_index": 1234.56
+    },
+    "xeneta": {
+      "date": "2026-04-09",
+      "xeneta_index": 987.65
+    }
+  },
+  "processed_count": 2
+}

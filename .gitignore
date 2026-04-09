@@ -1,0 +1,16 @@
+.venv/
+env/
+__pycache__/
+*.pyc
+build/
+dist/
+.pytest_cache/
+src/data/
+reports/
+.env
+.env.local
+.DS_Store
+.vscode/
+*.db
+*.sqlite3
+/.github/workflows/*.log
