@@ -35,6 +35,12 @@ def run_workflow(samples_path=None):
         if not deduper.is_duplicate(ex):
             rec_id = deduper.save(ex)
             saved_ids.append(rec_id)
+        # attach market snapshot per document
+        try:
+            doc_date = ex.get('date')
+            ex['market_snapshot'] = {'fbx': market.fetch_fbx(date=doc_date), 'xeneta': market.fetch_xeneta(date=doc_date)}
+        except Exception:
+            logger.exception('Failed to fetch market snapshot for doc %s', ex.get('doc_id'))
         processed.append(ex)
 
     stats = calculator.compute_stats(processed)

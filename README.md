@@ -62,6 +62,11 @@ CI artifacts: the workflow now runs the demo and uploads a `cpa-artifacts.zip` c
 
 The task command should be the default container `CMD` which executes `python hermes_task.py`.
 - To enable real LLMs or Apify actors, set the corresponding environment variables and consult adapters in `src/agent_app/adapters.py`.
+ - To enable real LLMs or Apify actors, set the corresponding environment variables and consult adapters in `src/agent_app/adapters.py`.
+    - `APIFY_TOKEN`: when set the code will attempt to run configured Apify actors for FBX/Xeneta. The actors used by default may require renting/paid usage; if you see "must rent a paid Actor" errors, either rent the actor in Apify Console or set `USE_LOCAL_SCRAPER=true` to force local scraping.
+    - `APIFY_FBX_ACTOR_ID` and `APIFY_XENETA_ACTOR_ID`: override the default actor IDs used for fetching market data.
+   - Default behavior: local scrapers are preferred. By default the code will call local HTTP scrapers (`scrapers.fetch_fbx_via_http` / `scrapers.fetch_xeneta_via_http`).
+   - To force Apify (even when local scrapers are present), set `USE_LOCAL_SCRAPER=false` and provide `APIFY_TOKEN` plus `APIFY_*_ACTOR_ID` in your `.env`.
 
 Submission
 - Add your GitHub repo link and include API tokens as required by the assignment deliverables.

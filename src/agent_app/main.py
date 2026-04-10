@@ -71,6 +71,14 @@ def run_demo():
             rec_id = deduper.save(extracted)
             saved_ids.append(rec_id)
             logger.info("Saved record id=%s", rec_id)
+        # attach market snapshot per document (use the document date if available)
+        try:
+            doc_date = extracted.get('date')
+            fbx_snap = market.fetch_fbx(date=doc_date)
+            xeneta_snap = market.fetch_xeneta(date=doc_date)
+            extracted['market_snapshot'] = {'fbx': fbx_snap, 'xeneta': xeneta_snap}
+        except Exception:
+            logger.exception('Failed to fetch market snapshot for doc %s', extracted.get('doc_id'))
         processed.append(extracted)
 
     # Analysis

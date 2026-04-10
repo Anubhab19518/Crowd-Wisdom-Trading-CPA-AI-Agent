@@ -41,12 +41,16 @@ class PDFLoaderAgent:
     def load_from_samples(self, docs: List[Dict[str, Any]]) -> List[Document]:
         results = []
         for d in docs:
+            md = d.get('metadata', {}) or {}
+            # prefer explicit top-level date if present
+            if d.get('date') and not md.get('date'):
+                md['date'] = d.get('date')
             results.append(Document(
                 id=d.get('id'),
                 source=d.get('source'),
                 filename=d.get('filename'),
                 raw_text_snippet=d.get('raw_text_snippet'),
-                metadata=d.get('metadata', {})
+                metadata=md
             ))
         return results
 
@@ -260,35 +264,74 @@ class MarketRateFetcherAgent:
         self.apify = apify_client
 
     def fetch_fbx(self, date=None) -> Dict[str, Any]:
-        # Prefer local HTTP scraper when configured or when Apify is unavailable/paid
+        # Default behavior: prefer local scraper. To force Apify, set USE_LOCAL_SCRAPER=false and provide APIFY_TOKEN.
         use_local = os.environ.get('USE_LOCAL_SCRAPER', 'true').lower() in ('1', 'true', 'yes')
+        apify_token = os.environ.get('APIFY_TOKEN')
+
         if use_local:
             try:
                 return scrapers.fetch_fbx_via_http(date)
             except Exception:
-                logger.exception('Local FBX scrape failed, falling back to Apify/mock')
+                logger.exception('Local FBX scrape failed; will attempt Apify if configured')
 
-        # Try Apify actor if token present
-        try:
-            ap = ApifyAdapter()
-            if ap.available():
-                actor_id = os.environ.get('APIFY_FBX_ACTOR_ID', 'parseforge/shiply-com-freight-marketplace-scraper')
-                result = ap.run_actor(actor_id, {'date': date})
-                return {'date': date or str(datetime.date.today()), 'fbx_index': result}
-        except Exception:
-            logger.exception('Apify FBX fetch failed, falling back to mock')
+        if apify_token:
+            try:
+                ap = ApifyAdapter(apify_token)
+                if ap.available():
+                    actor_id = os.environ.get('APIFY_FBX_ACTOR_ID', 'parseforge/shiply-com-freight-marketplace-scraper')
+                    run = ap.run_actor(actor_id, {'date': date})
+                    if isinstance(run, dict):
+                        if 'output' in run:
+                            out = run.get('output')
+                            if isinstance(out, dict) and 'fbx_index' in out:
+                                return {'date': date or str(datetime.date.today()), 'fbx_index': out.get('fbx_index'), 'source': f'apify:{actor_id}'}
+                            if isinstance(out, (int, float)):
+                                return {'date': date or str(datetime.date.today()), 'fbx_index': float(out), 'source': f'apify:{actor_id}'}
+                        if 'fbx_index' in run:
+                            return {'date': date or str(datetime.date.today()), 'fbx_index': run.get('fbx_index'), 'source': f'apify:{actor_id}'}
+                        try:
+                            val = float(run)
+                            return {'date': date or str(datetime.date.today()), 'fbx_index': val, 'source': f'apify:{actor_id}'}
+                        except Exception:
+                            pass
+            except Exception:
+                logger.exception('Apify FBX fetch failed; falling back to mock')
 
-        # Fallback mocked value
-        return {'date': date or str(datetime.date.today()), 'fbx_index': 1234.56}
+        return {'date': date or str(datetime.date.today()), 'fbx_index': 1234.56, 'source': 'mock'}
 
     def fetch_xeneta(self, date=None) -> Dict[str, Any]:
+        # Default behavior: prefer local scraper. To force Apify, set USE_LOCAL_SCRAPER=false and provide APIFY_TOKEN.
         use_local = os.environ.get('USE_LOCAL_SCRAPER', 'true').lower() in ('1', 'true', 'yes')
+        apify_token = os.environ.get('APIFY_TOKEN')
+
         if use_local:
             try:
                 return scrapers.fetch_xeneta_via_http(date)
             except Exception:
-                logger.exception('Local Xeneta scrape failed, falling back to mock')
-        return {'date': date or str(datetime.date.today()), 'xeneta_index': 987.65}
+                logger.exception('Local Xeneta scrape failed; will attempt Apify if configured')
+
+        if apify_token:
+            try:
+                ap = ApifyAdapter(apify_token)
+                if ap.available():
+                    actor_id = os.environ.get('APIFY_XENETA_ACTOR_ID', 'parseforge/xeneta-scraper')
+                    run = ap.run_actor(actor_id, {'date': date})
+                    if isinstance(run, dict):
+                        if 'output' in run:
+                            out = run.get('output')
+                            if isinstance(out, dict) and 'xeneta_index' in out:
+                                return {'date': date or str(datetime.date.today()), 'xeneta_index': out.get('xeneta_index'), 'source': f'apify:{actor_id}'}
+                        if 'xeneta_index' in run:
+                            return {'date': date or str(datetime.date.today()), 'xeneta_index': run.get('xeneta_index'), 'source': f'apify:{actor_id}'}
+                        try:
+                            val = float(run)
+                            return {'date': date or str(datetime.date.today()), 'xeneta_index': val, 'source': f'apify:{actor_id}'}
+                        except Exception:
+                            pass
+            except Exception:
+                logger.exception('Apify Xeneta fetch failed, falling back to mock')
+
+        return {'date': date or str(datetime.date.today()), 'xeneta_index': 987.65, 'source': 'mock'}
 
 
 class ReportingAgent:
