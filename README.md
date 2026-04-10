@@ -67,7 +67,7 @@ Submission
 - Add your GitHub repo link and include API tokens as required by the assignment deliverables.
 
 Run locally (quick)
-1. Copy `.env.example` to `.env` and fill values (do NOT commit `.env`):
+1. The .env should look something like this:
 
    - `OPENROUTER_API_KEY` — OpenRouter API key (for LLM tasks)
    - `OPENROUTER_MODEL` — recommended: `meta-llama/llama-3.3-70b-instruct:free`
@@ -127,30 +127,33 @@ Evaluation & Submission Checklist
 - Evaluation criteria mapping:
    - **Working functionality**: run `python -u run_demo.py` or `python scripts/run_demo_summary.py` to generate reports; CI runs tests automatically.
    - **Code clarity and organization**: the pipeline is modular under `src/agent_app/`; use `agent_app.main` as the main driver.
-   - **Agent tooling**: adapters and placeholders exist in `src/agent_app/adapters.py` for external agent-building tools; to integrate 3rd-party agent platforms (cursor.com / Antigravity / Kiro) add an adapter that implements the same `generate()` or `run_actor()` pattern used by `OpenRouterAdapter`/`ApifyAdapter`.
+   - **Agent tooling**: adapters and placeholders exist in `src/agent_app/adapters.py` for external agent-building tools; to integrate 3rd-party agent platforms (cursor.com / Antigravity) add an adapter that implements the same `generate()` or `run_actor()` pattern used by `OpenRouterAdapter`/`ApifyAdapter`.
 
 Extra credit features present:
 - **Scale**: containerization via `Dockerfile` and CI workflow make scaling and deployment straightforward.
 - **Logging & Error handling**: `src/agent_app/main.py` configures console+file logging; `run_demo.py` has top-level exception logging to aid debugging.
 
-If you want, I can add a short adapter example for one of the listed platforms (cursor.com/Antigravity/Kiro) — tell me which and I will scaffold the adapter and README integration steps.
--
-- Report format
-- The generated report is a JSON file with the following top-level structure:
-- ```json
-- {
--   "meta": { "generated_at": "...Z", "generator": "agent_app/ReportingAgent", ... },
--   "analysis": {
--      "stats": { "avg_cost": 11150.0, "count": 2, "median": 11150.0, "std": 1350.0 },
--      "anomalies": [ {"doc_id": "doc-123", "amount": 99999.0, "z_score": 4.2} ],
--      "market": { "fbx": {...}, "xeneta": {...} },
--      "processed_count": 2,
--      "processed": [ { ...extracted record... } ],
--      "saved_record_ids": [1,2]
--   }
-- }
-- ```
-- The project writes a local SQLite DB at `src/data/agents.db` by default.
+If you want, I can add a short adapter example for one of the listed platforms (cursor.com/Antigravity) — tell me which and I will scaffold the adapter and README integration steps.
+
+Report format
+
+The generated report is a JSON file with the following top-level structure:
+
+```json
+{
+   "meta": { "generated_at": "...Z", "generator": "agent_app/ReportingAgent", "generator_version": "1.0" },
+   "analysis": {
+       "stats": { "avg_cost": 11150.0, "count": 2, "median": 11150.0, "std": 1350.0 },
+       "anomalies": [ {"doc_id": "doc-123", "amount": 99999.0, "z_score": 4.2} ],
+       "market": { "fbx": {...}, "xeneta": {...} },
+       "processed_count": 2,
+       "processed": [ { ...extracted record... } ],
+       "saved_record_ids": [1,2]
+   }
+}
+```
+
+The project writes a local SQLite DB at `src/data/agents.db` by default.
 - CI builds and runs the demo and uploads `cpa-artifacts.zip` (reports + DB) as a workflow artifact.
 
 
