@@ -14,4 +14,11 @@ from agent_app import main
 
 
 if __name__ == '__main__':
-    main.run_demo()
+    try:
+        main.run_demo()
+    except Exception as e:
+        # best-effort logging to file/console
+        import logging, traceback
+        logging.getLogger('run_demo').exception('Unhandled error in run_demo: %s', e)
+        traceback.print_exc()
+        raise

@@ -28,16 +28,28 @@ def run_workflow(samples_path=None):
     with open(samples_path, 'r', encoding='utf-8') as f:
         docs = json.load(f)
     processed = []
+    saved_ids = []
     for d in docs:
         doc = loader.load_from_samples([d])[0]
         ex = extractor.extract(doc)
         if not deduper.is_duplicate(ex):
-            deduper.save(ex)
+            rec_id = deduper.save(ex)
+            saved_ids.append(rec_id)
         processed.append(ex)
-    summary = calculator.compute_avg_cost(processed)
+
+    stats = calculator.compute_stats(processed)
     anomalies = calculator.detect_anomalies(processed)
     market_fbx = market.fetch_fbx()
-    analysis = {'summary': summary, 'anomalies': anomalies, 'market': market_fbx}
+    market_xeneta = market.fetch_xeneta()
+
+    analysis = {
+        'stats': stats,
+        'anomalies': anomalies,
+        'market': {'fbx': market_fbx, 'xeneta': market_xeneta},
+        'processed_count': len(processed),
+        'processed': processed,
+        'saved_record_ids': saved_ids,
+    }
     path = reporter.generate_report(analysis)
     logger.info('Hermes workflow finished, report=%s', path)
     return path

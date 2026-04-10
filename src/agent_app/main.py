@@ -14,8 +14,23 @@ from agent_app.agents import (
 )
 
 load_dotenv()
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+# console handler
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+fmt = logging.Formatter('%(asctime)s %(levelname)s %(name)s: %(message)s')
+ch.setFormatter(fmt)
+logger.addHandler(ch)
+# file handler
+try:
+    os.makedirs('logs', exist_ok=True)
+    fh = logging.FileHandler(os.path.join('logs', 'demo.log'))
+    fh.setLevel(logging.INFO)
+    fh.setFormatter(fmt)
+    logger.addHandler(fh)
+except Exception:
+    logger.debug('Unable to create log file handler')
 
 SAMPLES_DIR = Path(__file__).resolve().parents[2] / 'samples'
 
@@ -41,6 +56,7 @@ def run_demo():
     logger.info("Loaded %d sample documents", len(docs))
 
     processed = []
+    saved_ids = []
     for d in docs:
         logger.info("Processing sample doc id=%s", d.get('id'))
         docs_loaded = loader.load_from_samples([d])
@@ -53,21 +69,24 @@ def run_demo():
             logger.info("Duplicate detected for doc %s - skipping save", extracted.get('doc_id'))
         else:
             rec_id = deduper.save(extracted)
+            saved_ids.append(rec_id)
             logger.info("Saved record id=%s", rec_id)
         processed.append(extracted)
 
     # Analysis
-    summary = calculator.compute_avg_cost(processed)
+        stats = calculator.compute_stats(processed)
     anomalies = calculator.detect_anomalies(processed)
     market_fbx = market.fetch_fbx()
     market_xeneta = market.fetch_xeneta()
 
-    analysis = {
-        'summary': summary,
-        'anomalies': anomalies,
-        'market': {'fbx': market_fbx, 'xeneta': market_xeneta},
-        'processed_count': len(processed),
-    }
+        analysis = {
+            'stats': stats,
+            'anomalies': anomalies,
+            'market': {'fbx': market_fbx, 'xeneta': market_xeneta},
+            'processed_count': len(processed),
+            'processed': processed,
+            'saved_record_ids': saved_ids,
+        }
 
     report_path = reporter.generate_report(analysis)
     logger.info("Generated report: %s", report_path)

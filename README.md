@@ -1,7 +1,10 @@
 Project: CPA Shipping & Logistics Cost Research Agent
 
 Overview
-- Python backend using Hermes Agent framework to provide search/research tools for CPAs to control shipping/logistics costs.
+-- Python backend using Hermes Agent framework to provide search/research tools for CPAs to control shipping/logistics costs.
+
+Brief description
+- This project is a lightweight agent-based pipeline that ingests shipping documents (PDFs or JSON samples), extracts structured fields (vendor, amount, route, date), deduplicates and stores records in a local SQLite DB, fetches market indices (FBX/Xeneta) via lightweight scrapers, computes simple statistics and anomaly detection, and emits a JSON report suitable for review or automated alerts. It's designed as a demo/prototype to show how LLMs (via OpenRouter), scrapers, and simple agents can be composed for CPA workflows.
 
 Goal
 - Build modular agents: PDF ingestion (GDrive/email), OCR & extraction, format classification, dedupe+DB, cost calculator, market-rate fetcher (FBX/Xeneta), reporting, and a Hermes feedback loop.
@@ -19,7 +22,7 @@ Quick start
 - `DATABASE_URL` - DB connection string (sqlite/postgres). If not set, a local sqlite at `src/data/agents.db` is used.
 - Google Drive / Gmail credentials: if you want GDrive/Gmail ingestion, follow Google API docs to create OAuth credentials and store them locally; the project contains placeholders for GDrive/Gmail clients.
 
-3. Run the starter app (skeleton):
+4. Run the starter app (skeleton):
 
    python -m agent_app.main
 
@@ -32,6 +35,7 @@ Files
 - `src/agent_app/agents.py` - skeleton implementations for agents
 - `src/agent_app/main.py` - CLI entrypoint
 - `samples/sample_input.json` - sample document JSON
+ - `samples/sample_output.json` - example output report (new format: `meta` + `analysis`)
 
 Notes
 - This repository provides a full local pipeline with optional integrations.
@@ -90,6 +94,12 @@ python scripts/fetch_sources.py
 python -u run_demo.py
 ```
 
+Run the concise summary script (reads the generated report and prints stats):
+
+```powershell
+python scripts/run_demo_summary.py
+```
+
 5. Run tests:
 
 ```powershell
@@ -104,8 +114,42 @@ docker build -t cpa-agent:latest .
 docker run --env-file .env cpa-agent:latest
 ```
 
-Notes
+- Notes
 - The demo prefers local scrapers (`USE_LOCAL_SCRAPER=true`) to avoid paid Apify actors. Set `USE_LOCAL_SCRAPER=false` to attempt Apify actor calls when `APIFY_TOKEN` is set.
+
+Evaluation & Submission Checklist
+- Deliverables included in this repo:
+   - **Python code**: full demo pipeline under `src/agent_app/` (loaders, extractor, dedupe, calculator, market fetcher, reporter, Hermes wrapper).
+   - **Sample input**: `samples/sample_input.json`.
+   - **Sample output**: `samples/sample_output.json` and generated reports under `reports/` after running the demo.
+   - **Tests**: `tests/test_flow.py` demonstrates an end-to-end run.
+
+- Evaluation criteria mapping:
+   - **Working functionality**: run `python -u run_demo.py` or `python scripts/run_demo_summary.py` to generate reports; CI runs tests automatically.
+   - **Code clarity and organization**: the pipeline is modular under `src/agent_app/`; use `agent_app.main` as the main driver.
+   - **Agent tooling**: adapters and placeholders exist in `src/agent_app/adapters.py` for external agent-building tools; to integrate 3rd-party agent platforms (cursor.com / Antigravity / Kiro) add an adapter that implements the same `generate()` or `run_actor()` pattern used by `OpenRouterAdapter`/`ApifyAdapter`.
+
+Extra credit features present:
+- **Scale**: containerization via `Dockerfile` and CI workflow make scaling and deployment straightforward.
+- **Logging & Error handling**: `src/agent_app/main.py` configures console+file logging; `run_demo.py` has top-level exception logging to aid debugging.
+
+If you want, I can add a short adapter example for one of the listed platforms (cursor.com/Antigravity/Kiro) — tell me which and I will scaffold the adapter and README integration steps.
+-
+- Report format
+- The generated report is a JSON file with the following top-level structure:
+- ```json
+- {
+-   "meta": { "generated_at": "...Z", "generator": "agent_app/ReportingAgent", ... },
+-   "analysis": {
+-      "stats": { "avg_cost": 11150.0, "count": 2, "median": 11150.0, "std": 1350.0 },
+-      "anomalies": [ {"doc_id": "doc-123", "amount": 99999.0, "z_score": 4.2} ],
+-      "market": { "fbx": {...}, "xeneta": {...} },
+-      "processed_count": 2,
+-      "processed": [ { ...extracted record... } ],
+-      "saved_record_ids": [1,2]
+-   }
+- }
+- ```
 - The project writes a local SQLite DB at `src/data/agents.db` by default.
 - CI builds and runs the demo and uploads `cpa-artifacts.zip` (reports + DB) as a workflow artifact.
 

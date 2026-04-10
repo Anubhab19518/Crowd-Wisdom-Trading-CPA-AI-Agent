@@ -223,19 +223,22 @@ class DedupeAgent:
 
 class CostCalculatorAgent:
     """Compute averages and simple anomaly detection using z-score."""
-    def compute_avg_cost(self, records: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def compute_stats(self, records: List[Dict[str, Any]]) -> Dict[str, Any]:
+        import statistics
         vals = [r.get('amount') for r in records if r.get('amount') is not None]
         if not vals:
-            return {'avg_cost': None, 'count': 0}
+            return {'avg_cost': None, 'count': 0, 'median': None, 'std': None}
         avg = sum(vals) / len(vals)
-        return {'avg_cost': avg, 'count': len(vals)}
+        median = statistics.median(vals)
+        std = statistics.pstdev(vals) if len(vals) > 1 else 0.0
+        return {'avg_cost': avg, 'count': len(vals), 'median': median, 'std': std}
 
     def detect_anomalies(self, records: List[Dict[str, Any]], threshold: float = 2.0) -> List[Dict[str, Any]]:
+        import math
         vals = [r.get('amount') for r in records if r.get('amount') is not None]
         if len(vals) < 2:
             return []
         mean = sum(vals) / len(vals)
-        import math
         var = sum((v - mean) ** 2 for v in vals) / len(vals)
         std = math.sqrt(var)
         anomalies = []
@@ -245,9 +248,9 @@ class CostCalculatorAgent:
                 continue
             if std == 0:
                 continue
-            z = abs((a - mean) / std)
-            if z > threshold:
-                anomalies.append({'record': r, 'z_score': z})
+            z = (a - mean) / std
+            if abs(z) > threshold:
+                anomalies.append({'doc_id': r.get('doc_id'), 'amount': a, 'z_score': z})
         return anomalies
 
 
@@ -297,9 +300,16 @@ class ReportingAgent:
     def generate_report(self, analysis: Dict[str, Any]) -> str:
         ts = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
         path = os.path.join(self.out_dir, f'report_{ts}.json')
+        # augment analysis with metadata
+        meta = {
+            'generated_at': datetime.datetime.utcnow().isoformat() + 'Z',
+            'generator': 'agent_app/ReportingAgent',
+            'generator_version': '1.0'
+        }
+        payload = {'meta': meta, 'analysis': analysis}
         with open(path, 'w', encoding='utf-8') as f:
             import json
-            json.dump(analysis, f, indent=2, default=str)
+            json.dump(payload, f, indent=2, default=str)
         return path
 
 

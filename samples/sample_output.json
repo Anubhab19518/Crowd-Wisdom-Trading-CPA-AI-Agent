@@ -1,18 +1,15 @@
 {
-  "summary": {
-    "avg_cost": 11150.0,
-    "count": 2
+  "meta": {
+    "generated_at": "2026-04-09T20:00:00Z",
+    "generator": "agent_app/ReportingAgent",
+    "generator_version": "1.0"
   },
-  "anomalies": [],
-  "market": {
-    "fbx": {
-      "date": "2026-04-09",
-      "fbx_index": 1234.56
-    },
-    "xeneta": {
-      "date": "2026-04-09",
-      "xeneta_index": 987.65
-    }
-  },
-  "processed_count": 2
+  "analysis": {
+    "stats": { "avg_cost": 11150.0, "count": 2, "median": 11150.0, "std": 1350.0 },
+    "anomalies": [],
+    "market": { "fbx": { "date": "2026-04-09", "fbx_index": 1234.56 }, "xeneta": { "date": "2026-04-09", "xeneta_index": 987.65 } },
+    "processed_count": 2,
+    "processed": [],
+    "saved_record_ids": []
+  }
 }
