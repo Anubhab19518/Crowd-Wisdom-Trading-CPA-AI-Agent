@@ -10,6 +10,9 @@ SRC = os.path.join(ROOT, 'src')
 if SRC not in sys.path:
     sys.path.insert(0, SRC)
 
+# Force skipping sample input when running this top-level demo runner
+os.environ.setdefault('SKIP_SAMPLE_INPUT', '1')
+
 from agent_app import main
 
 

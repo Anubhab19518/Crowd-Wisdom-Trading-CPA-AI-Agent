@@ -1,0 +1,128 @@
+2026-04-12 00:40:35,924 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 00:40:35,970 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 00:40:35,970 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 00:40:36,069 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 00:40:42,032 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 00:40:42,037 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 00:40:50,426 INFO agent_app.main: Generated report: reports\report_20260411T191050Z.json
+2026-04-12 00:42:11,429 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 00:42:11,456 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 00:42:11,456 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 00:42:11,474 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 00:42:15,412 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 00:42:15,416 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 00:42:22,718 INFO agent_app.main: Generated report: reports\report_20260411T191222Z.json
+2026-04-12 00:48:35,487 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 00:48:35,530 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 00:48:35,530 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 00:48:35,558 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 00:48:41,597 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 00:48:41,597 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 00:48:52,803 INFO agent_app.main: Generated report: reports\report_20260411T191852Z.json
+2026-04-12 00:59:54,293 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 00:59:54,328 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 00:59:54,328 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 00:59:54,347 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:00:00,235 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:00:00,256 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:00:11,749 INFO agent_app.main: Generated report: reports\report_20260411T193011Z.json
+2026-04-12 01:19:50,863 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 01:19:50,898 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 01:19:50,899 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 01:19:50,967 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:20:06,380 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:20:06,388 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:20:36,106 INFO agent_app.main: Generated report: reports\report_20260411T195036Z.json
+2026-04-12 01:21:41,834 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 01:21:41,854 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 01:21:41,854 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 01:21:41,875 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:21:41,876 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:21:41,884 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:21:41,894 INFO agent_app.main: Generated report: reports\report_20260411T195141Z.json
+2026-04-12 01:23:41,853 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 01:23:41,884 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 01:23:41,884 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 01:23:41,900 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:23:41,900 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:23:41,900 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:23:41,923 INFO agent_app.main: Generated report: reports\report_20260411T195341Z.json
+2026-04-12 01:31:16,935 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 01:31:16,959 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 01:31:16,959 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 01:31:16,982 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:31:32,248 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:31:32,258 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:32:02,466 INFO agent_app.main: Generated report: reports\report_20260411T200202Z.json
+2026-04-12 01:35:29,187 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 01:35:29,210 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 01:35:29,210 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 01:35:29,215 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:35:44,098 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:35:44,111 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:36:13,885 INFO agent_app.main: Generated report: reports\report_20260411T200613Z.json
+2026-04-12 01:37:02,097 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 01:37:02,130 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 01:37:02,130 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 01:37:02,149 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:37:02,170 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:37:02,175 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:37:02,181 INFO agent_app.main: Generated report: reports\report_20260411T200702Z.json
+2026-04-12 01:43:46,839 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 01:43:46,872 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 01:43:46,872 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 01:43:46,887 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:44:02,253 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:44:02,253 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:44:31,844 INFO agent_app.main: Generated report: reports\report_20260411T201431Z.json
+2026-04-12 01:53:35,509 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 01:53:35,536 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 01:53:35,536 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 01:53:35,609 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:53:50,670 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:53:50,686 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:54:20,197 INFO agent_app.main: Generated report: reports\report_20260411T202420Z.json
+2026-04-12 01:58:01,698 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 01:58:01,719 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 01:58:01,719 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 01:58:01,736 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 01:58:16,961 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 01:58:16,981 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 01:58:46,657 INFO agent_app.main: Generated report: reports\report_20260411T202846Z.json
+2026-04-12 02:04:15,661 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 02:04:15,679 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 02:04:15,679 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 02:04:15,699 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 02:04:32,985 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 02:04:32,999 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 02:04:50,305 INFO agent_app.main: Generated report: reports\report_20260411T203450Z.json
+2026-04-12 02:09:11,968 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 02:09:11,998 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 02:09:11,999 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 02:09:12,012 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 02:09:21,972 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 02:09:21,972 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 02:09:38,692 INFO agent_app.main: Generated report: reports\report_20260411T203938Z.json
+2026-04-12 02:23:33,467 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 02:23:33,489 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 02:23:33,489 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 02:23:33,505 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 02:23:43,376 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 02:23:43,428 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 02:23:59,147 INFO agent_app.main: Generated report: reports\report_20260411T205359Z.json
+2026-04-12 02:24:22,381 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 02:24:22,407 INFO agent_app.main: Loaded 2 sample documents
+2026-04-12 02:24:22,407 INFO agent_app.main: Processing sample doc id=doc-001
+2026-04-12 02:24:22,423 INFO agent_app.main: Duplicate detected for doc doc-001 - skipping save
+2026-04-12 02:24:32,457 INFO agent_app.main: Processing sample doc id=doc-002
+2026-04-12 02:24:32,464 INFO agent_app.main: Duplicate detected for doc doc-002 - skipping save
+2026-04-12 02:24:48,372 INFO agent_app.main: Generated report: reports\report_20260411T205448Z.json
+2026-04-12 02:26:12,816 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 02:26:12,838 INFO agent_app.main: SKIP_SAMPLE_INPUT set — skipping samples and using scraped market data only
+2026-04-12 02:26:20,391 INFO agent_app.main: Generated report: reports\report_20260411T205620Z.json
+2026-04-12 02:35:15,607 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 02:35:15,630 INFO agent_app.main: SKIP_SAMPLE_INPUT set — skipping samples and using scraped market data only
+2026-04-12 02:35:34,549 INFO agent_app.main: Generated report: reports\report_20260411T210534Z.json
+2026-04-12 02:51:20,295 INFO agent_app.main: Starting demo run (skeleton)
+2026-04-12 02:51:20,323 INFO agent_app.main: SKIP_SAMPLE_INPUT set — skipping samples and using scraped market data only
+2026-04-12 02:51:39,158 INFO agent_app.main: Generated report: reports\report_20260411T212139Z.json

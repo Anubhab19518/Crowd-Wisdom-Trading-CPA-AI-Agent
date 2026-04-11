@@ -44,16 +44,21 @@ def run_demo():
     market = MarketRateFetcherAgent()
     reporter = ReportingAgent()
 
-    # load sample input (JSON) and run the processing flow
-    sample_file = SAMPLES_DIR / 'sample_input.json'
-    if not sample_file.exists():
-        logger.warning("No sample_input.json found in samples/")
-        return
-
-    with open(sample_file, 'r', encoding='utf-8') as f:
-        docs = json.load(f)
-
-    logger.info("Loaded %d sample documents", len(docs))
+    # Optionally skip loading sample input and only use scraped market data
+    skip_samples = str(os.environ.get('SKIP_SAMPLE_INPUT', '')).lower() in ('1', 'true', 'yes')
+    docs = []
+    if skip_samples:
+        logger.info("SKIP_SAMPLE_INPUT set — skipping samples and using scraped market data only")
+    else:
+        # load sample input (JSON) and run the processing flow
+        sample_file = SAMPLES_DIR / 'sample_input.json'
+        if not sample_file.exists():
+            logger.warning("No sample_input.json found in samples/")
+            docs = []
+        else:
+            with open(sample_file, 'r', encoding='utf-8') as f:
+                docs = json.load(f)
+            logger.info("Loaded %d sample documents", len(docs))
 
     processed = []
     saved_ids = []
@@ -81,20 +86,58 @@ def run_demo():
             logger.exception('Failed to fetch market snapshot for doc %s', extracted.get('doc_id'))
         processed.append(extracted)
 
+    # If skipping samples (or if no samples) but Apify returned items, map them into processed
+    if not docs:
+        try:
+            # fetch market snapshots which now may include 'apify_items'
+            fbx_snap = market.fetch_fbx()
+            xeneta_snap = market.fetch_xeneta()
+            # prefer apify_items from fbx then xeneta
+            items = None
+            if isinstance(fbx_snap, dict) and fbx_snap.get('apify_items'):
+                items = fbx_snap.get('apify_items')
+            elif isinstance(xeneta_snap, dict) and xeneta_snap.get('apify_items'):
+                items = xeneta_snap.get('apify_items')
+            if items:
+                deduper = DedupeAgent()
+                for i, it in enumerate(items):
+                    extracted = {
+                        'doc_id': it.get('listingId') or f'apify-{i}',
+                        'source': 'apify',
+                        'filename': None,
+                        'text': it.get('title') or it.get('url'),
+                        'format': 'scraped_listing',
+                        'vendor': None,
+                        'amount': None,
+                        'currency': None,
+                        'route': f"{it.get('collectionCity','') or ''} -> {it.get('deliveryCity','') or ''}".strip(' -> '),
+                        'date': it.get('datePosted') or it.get('scrapedAt'),
+                        'market_snapshot': {'fbx': fbx_snap, 'xeneta': xeneta_snap}
+                    }
+                    try:
+                        if not deduper.is_duplicate(extracted):
+                            rec_id = deduper.save(extracted)
+                            saved_ids.append(rec_id)
+                        processed.append(extracted)
+                    except Exception:
+                        logger.exception('Failed to save/migrate apify item to DB')
+        except Exception:
+            logger.exception('Failed to map apify items into processed entries')
+
     # Analysis
-        stats = calculator.compute_stats(processed)
+    stats = calculator.compute_stats(processed)
     anomalies = calculator.detect_anomalies(processed)
     market_fbx = market.fetch_fbx()
     market_xeneta = market.fetch_xeneta()
 
-        analysis = {
-            'stats': stats,
-            'anomalies': anomalies,
-            'market': {'fbx': market_fbx, 'xeneta': market_xeneta},
-            'processed_count': len(processed),
-            'processed': processed,
-            'saved_record_ids': saved_ids,
-        }
+    analysis = {
+        'stats': stats,
+        'anomalies': anomalies,
+        'market': {'fbx': market_fbx, 'xeneta': market_xeneta},
+        'processed_count': len(processed),
+        'processed': processed,
+        'saved_record_ids': saved_ids,
+    }
 
     report_path = reporter.generate_report(analysis)
     logger.info("Generated report: %s", report_path)

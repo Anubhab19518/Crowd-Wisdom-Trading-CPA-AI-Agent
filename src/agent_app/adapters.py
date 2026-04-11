@@ -49,22 +49,83 @@ class ApifyAdapter:
     def run_actor(self, actor_id: str, input_data: dict) -> dict:
         if not self.available():
             raise RuntimeError('APIFY_TOKEN not set')
-        # Try to use apify-client if installed
+        # Prefer the HTTP run-sync-get-dataset-items endpoint to obtain dataset items directly.
+        try:
+            import requests
+            actor_id_for_url = actor_id.replace('/', '~')
+            base = os.environ.get('APIFY_API_BASE', 'https://api.apify.com')
+            token = self.token
+            url = f"{base}/v2/acts/{actor_id_for_url}/run-sync-get-dataset-items?token={token}"
+            r = requests.post(url, json=input_data or {}, timeout=120)
+            if r.status_code in (200, 201):
+                try:
+                    return r.json()
+                except Exception:
+                    return {'output': r.text}
+        except Exception:
+            logger.debug('HTTP run-sync-get-dataset-items failed, will try apify-client', exc_info=True)
+
+        # Try to use apify-client if installed as a fallback
         try:
             from apify_client import ApifyClient
             client = ApifyClient(self.token)
-            # This is a best-effort call; actual API may require different usage
             actor = client.actor(actor_id)
-            # apify-client ActorClient.call may expect keyword args; try common variants
             try:
                 run = actor.call(run_input=input_data)
             except TypeError:
                 try:
                     run = actor.call(input=input_data)
                 except TypeError:
-                    # final fallback: call with positional (older clients)
                     run = actor.call(input_data)
+            # If apify-client returned a run metadata dict, try to fetch dataset items via HTTP
+            if isinstance(run, dict):
+                # If defaultDatasetId present, fetch dataset items via HTTP
+                dataset_id = run.get('defaultDatasetId') or run.get('defaultDatasetId')
+                if dataset_id:
+                    try:
+                        import requests
+                        base = os.environ.get('APIFY_API_BASE', 'https://api.apify.com')
+                        token = self.token
+                        url = f"{base}/v2/datasets/{dataset_id}/items?token={token}"
+                        r = requests.get(url, timeout=60)
+                        if r.status_code in (200, 201):
+                            try:
+                                return r.json()
+                            except Exception:
+                                return {'output': r.text}
+                    except Exception:
+                        logger.debug('Failed to fetch dataset items via HTTP after apify-client run', exc_info=True)
             return run
         except Exception:
-            logger.exception('Apify client call failed')
-            raise
+            logger.debug('Apify client call failed; attempting HTTP run-sync fallbacks', exc_info=True)
+            # As a fallback, try HTTP endpoints to get dataset items or run-sync output
+            try:
+                actor_id_for_url = actor_id.replace('/', '~')
+                base = os.environ.get('APIFY_API_BASE', 'https://api.apify.com')
+                token = self.token
+                # Try run-sync-get-dataset-items
+                url = f"{base}/v2/acts/{actor_id_for_url}/run-sync-get-dataset-items?token={token}"
+                r = requests.post(url, json=input_data or {}, timeout=120)
+                if r.status_code in (200, 201):
+                    try:
+                        return r.json()
+                    except Exception:
+                        return {'output': r.text}
+                # Try run-sync
+                url2 = f"{base}/v2/acts/{actor_id_for_url}/run-sync?token={token}"
+                r2 = requests.post(url2, json=input_data or {}, timeout=120)
+                if r2.status_code in (200, 201):
+                    try:
+                        return r2.json()
+                    except Exception:
+                        return {'output': r2.text}
+                # Last: start run and return run metadata
+                url3 = f"{base}/v2/acts/{actor_id_for_url}/runs?token={token}"
+                r3 = requests.post(url3, json=input_data or {}, timeout=30)
+                try:
+                    return r3.json()
+                except Exception:
+                    return {'output': r3.text}
+            except Exception:
+                logger.exception('HTTP fallback to Apify endpoints also failed')
+                raise

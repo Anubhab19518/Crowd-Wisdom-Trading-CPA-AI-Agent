@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 
 from agent_app import db
 from agent_app.adapters import ApifyAdapter, OpenRouterAdapter
-from agent_app import scrapers
 from agent_app import prompts
 import os
 
@@ -264,9 +263,57 @@ class MarketRateFetcherAgent:
         self.apify = apify_client
 
     def fetch_fbx(self, date=None) -> Dict[str, Any]:
-        # Default behavior: prefer local scraper. To force Apify, set USE_LOCAL_SCRAPER=false and provide APIFY_TOKEN.
-        use_local = os.environ.get('USE_LOCAL_SCRAPER', 'true').lower() in ('1', 'true', 'yes')
+        # If a local Apify fixture is provided, prefer it for deterministic runs
+        fixture_path = os.environ.get('APIFY_FIXTURE_PATH')
+        if not fixture_path:
+            # look for latest saved apify_dataset file in reports/
+            try:
+                from glob import glob
+                from pathlib import Path
+                rpt_dir = str(Path(__file__).resolve().parents[2] / 'reports')
+                pattern = os.path.join(rpt_dir, 'apify_dataset_*')
+                matches = glob(pattern)
+                if matches:
+                    # choose newest
+                    matches.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+                    fixture_path = matches[0]
+            except Exception:
+                fixture_path = None
+        if fixture_path and os.path.exists(fixture_path):
+            try:
+                import json
+                with open(fixture_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                items = None
+                if isinstance(data, list):
+                    items = data
+                elif isinstance(data, dict) and 'output' in data and isinstance(data['output'], list):
+                    items = data['output']
+                if items:
+                    quotes = [it.get('quotesCount') for it in items if isinstance(it, dict) and isinstance(it.get('quotesCount'), (int, float))]
+                    mileages = [it.get('mileage') for it in items if isinstance(it, dict) and isinstance(it.get('mileage'), (int, float))]
+                    avg_quotes = (sum(quotes) / len(quotes)) if quotes else None
+                    avg_mileage = (sum(mileages) / len(mileages)) if mileages else None
+                    proxy = avg_quotes if avg_quotes is not None else avg_mileage
+                    return {
+                        'date': date or str(datetime.date.today()),
+                        'fbx_index': float(proxy) if proxy is not None else None,
+                        'source': f'fixture:{os.path.basename(fixture_path)}',
+                        'apify_items_count': len(items),
+                        'apify_avg_quotes': avg_quotes,
+                        'apify_avg_mileage': avg_mileage,
+                        'apify_sample': items[:5]
+                    }
+            except Exception:
+                logger.exception('Failed to load APIFY fixture %s', fixture_path)
+        # Default behavior: auto-detect. If APIFY_TOKEN is present and USE_LOCAL_SCRAPER is not
+        # explicitly set, prefer Apify. Set USE_LOCAL_SCRAPER to 'true' to force local scraping.
+        env_use = os.environ.get('USE_LOCAL_SCRAPER')
         apify_token = os.environ.get('APIFY_TOKEN')
+        if env_use is None:
+            use_local = False if apify_token else True
+        else:
+            use_local = str(env_use).lower() in ('1', 'true', 'yes')
 
         if use_local:
             try:
@@ -279,19 +326,70 @@ class MarketRateFetcherAgent:
                 ap = ApifyAdapter(apify_token)
                 if ap.available():
                     actor_id = os.environ.get('APIFY_FBX_ACTOR_ID', 'parseforge/shiply-com-freight-marketplace-scraper')
-                    run = ap.run_actor(actor_id, {'date': date})
-                    if isinstance(run, dict):
-                        if 'output' in run:
-                            out = run.get('output')
-                            if isinstance(out, dict) and 'fbx_index' in out:
-                                return {'date': date or str(datetime.date.today()), 'fbx_index': out.get('fbx_index'), 'source': f'apify:{actor_id}'}
-                            if isinstance(out, (int, float)):
-                                return {'date': date or str(datetime.date.today()), 'fbx_index': float(out), 'source': f'apify:{actor_id}'}
-                        if 'fbx_index' in run:
-                            return {'date': date or str(datetime.date.today()), 'fbx_index': run.get('fbx_index'), 'source': f'apify:{actor_id}'}
+                    # provide a richer input matching the parseforge actor's form fields
+                    # The parseforge actor does not accept a `date` property in input schema.
+                    # Do not pass `date` to avoid validation errors from the actor.
+                    input_data = {
+                        'country': os.environ.get('APIFY_COUNTRY', 'United Kingdom'),
+                        'maxItems': int(os.environ.get('APIFY_MAX_ITEMS', '10')),
+                        'maxConcurrency': int(os.environ.get('APIFY_MAX_CONCURRENCY', '5')),
+                        'requestDelayMs': int(os.environ.get('APIFY_REQUEST_DELAY_MS', '500')),
+                    }
+                    run = ap.run_actor(actor_id, input_data)
+
+                    def _search_for_key(obj, keys):
+                        if isinstance(obj, dict):
+                            for k, v in obj.items():
+                                if k in keys:
+                                    return v
+                                res = _search_for_key(v, keys)
+                                if res is not None:
+                                    return res
+                        elif isinstance(obj, list):
+                            for item in obj:
+                                res = _search_for_key(item, keys)
+                                if res is not None:
+                                    return res
+                        return None
+
+                    # try common locations for the index
+                    val = None
+                    if isinstance(run, dict) and 'output' in run:
+                        # If actor returned a dataset-style output (list of items)
+                        out = run['output']
+                        if isinstance(out, list):
+                            items = out
+                        else:
+                            items = None
+                        val = _search_for_key(out, ('fbx_index', 'index', 'value')) if out is not None else None
+                    else:
+                        items = run if isinstance(run, list) else None
+                        val = _search_for_key(run, ('fbx_index', 'index', 'value'))
+
+                    # If dataset items exist, compute simple numeric summaries from known fields
+                    if items:
+                        count = len(items)
+                        quotes = [it.get('quotesCount') for it in items if isinstance(it, dict) and isinstance(it.get('quotesCount'), (int, float))]
+                        mileages = [it.get('mileage') for it in items if isinstance(it, dict) and isinstance(it.get('mileage'), (int, float))]
+                        avg_quotes = (sum(quotes) / len(quotes)) if quotes else None
+                        avg_mileage = (sum(mileages) / len(mileages)) if mileages else None
+                        # choose a proxy metric for FBX: prefer avg_quotes if available, else avg_mileage
+                        proxy = avg_quotes if avg_quotes is not None else avg_mileage
+                        return {
+                            'date': date or str(datetime.date.today()),
+                            'fbx_index': float(proxy) if proxy is not None else None,
+                            'source': f'apify:{actor_id}',
+                            'apify_items_count': count,
+                            'apify_avg_quotes': avg_quotes,
+                            'apify_avg_mileage': avg_mileage,
+                            'apify_sample': items[:5],
+                            'apify_items': items
+                        }
+
+                    if val is not None:
                         try:
-                            val = float(run)
-                            return {'date': date or str(datetime.date.today()), 'fbx_index': val, 'source': f'apify:{actor_id}'}
+                            v = float(val)
+                            return {'date': date or str(datetime.date.today()), 'fbx_index': v, 'source': f'apify:{actor_id}'}
                         except Exception:
                             pass
             except Exception:
@@ -300,9 +398,57 @@ class MarketRateFetcherAgent:
         return {'date': date or str(datetime.date.today()), 'fbx_index': 1234.56, 'source': 'mock'}
 
     def fetch_xeneta(self, date=None) -> Dict[str, Any]:
-        # Default behavior: prefer local scraper. To force Apify, set USE_LOCAL_SCRAPER=false and provide APIFY_TOKEN.
-        use_local = os.environ.get('USE_LOCAL_SCRAPER', 'true').lower() in ('1', 'true', 'yes')
+        # If a local Apify fixture is provided, prefer it for deterministic runs
+        fixture_path = os.environ.get('APIFY_FIXTURE_PATH')
+        if not fixture_path:
+            try:
+                from glob import glob
+                from pathlib import Path
+                rpt_dir = str(Path(__file__).resolve().parents[2] / 'reports')
+                pattern = os.path.join(rpt_dir, 'apify_dataset_*')
+                matches = glob(pattern)
+                if matches:
+                    matches.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+                    fixture_path = matches[0]
+            except Exception:
+                fixture_path = None
+        if fixture_path and os.path.exists(fixture_path):
+            try:
+                import json
+                with open(fixture_path, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                items = None
+                if isinstance(data, list):
+                    items = data
+                elif isinstance(data, dict) and 'output' in data and isinstance(data['output'], list):
+                    items = data['output']
+                if items:
+                    quotes = [it.get('quotesCount') for it in items if isinstance(it, dict) and isinstance(it.get('quotesCount'), (int, float))]
+                    mileages = [it.get('mileage') for it in items if isinstance(it, dict) and isinstance(it.get('mileage'), (int, float))]
+                    avg_quotes = (sum(quotes) / len(quotes)) if quotes else None
+                    avg_mileage = (sum(mileages) / len(mileages)) if mileages else None
+                    proxy = avg_quotes if avg_quotes is not None else avg_mileage
+                    return {
+                        'date': date or str(datetime.date.today()),
+                        'xeneta_index': float(proxy) if proxy is not None else None,
+                        'source': f'fixture:{os.path.basename(fixture_path)}',
+                        'apify_items_count': len(items),
+                        'apify_avg_quotes': avg_quotes,
+                        'apify_avg_mileage': avg_mileage,
+                        'apify_sample': items[:5],
+                        'apify_items': items
+                    }
+            except Exception:
+                logger.exception('Failed to load APIFY fixture %s', fixture_path)
+
+        # Default behavior: auto-detect. If APIFY_TOKEN is present and USE_LOCAL_SCRAPER is not
+        # explicitly set, prefer Apify. Set USE_LOCAL_SCRAPER to 'true' to force local scraping.
+        env_use = os.environ.get('USE_LOCAL_SCRAPER')
         apify_token = os.environ.get('APIFY_TOKEN')
+        if env_use is None:
+            use_local = False if apify_token else True
+        else:
+            use_local = str(env_use).lower() in ('1', 'true', 'yes')
 
         if use_local:
             try:
@@ -314,18 +460,63 @@ class MarketRateFetcherAgent:
             try:
                 ap = ApifyAdapter(apify_token)
                 if ap.available():
-                    actor_id = os.environ.get('APIFY_XENETA_ACTOR_ID', 'parseforge/xeneta-scraper')
-                    run = ap.run_actor(actor_id, {'date': date})
-                    if isinstance(run, dict):
-                        if 'output' in run:
-                            out = run.get('output')
-                            if isinstance(out, dict) and 'xeneta_index' in out:
-                                return {'date': date or str(datetime.date.today()), 'xeneta_index': out.get('xeneta_index'), 'source': f'apify:{actor_id}'}
-                        if 'xeneta_index' in run:
-                            return {'date': date or str(datetime.date.today()), 'xeneta_index': run.get('xeneta_index'), 'source': f'apify:{actor_id}'}
+                    # allow using the same actor as FBX if desired
+                    actor_id = os.environ.get('APIFY_XENETA_ACTOR_ID') or os.environ.get('APIFY_FBX_ACTOR_ID', 'parseforge/shiply-com-freight-marketplace-scraper')
+                    input_data = {
+                        # actor input does not support `date`; use other filters if needed
+                        'country': os.environ.get('APIFY_COUNTRY', 'United Kingdom'),
+                        'maxItems': int(os.environ.get('APIFY_MAX_ITEMS', '10')),
+                        'maxConcurrency': int(os.environ.get('APIFY_MAX_CONCURRENCY', '5')),
+                        'requestDelayMs': int(os.environ.get('APIFY_REQUEST_DELAY_MS', '500')),
+                    }
+                    run = ap.run_actor(actor_id, input_data)
+
+                    def _search_for_key(obj, keys):
+                        if isinstance(obj, dict):
+                            for k, v in obj.items():
+                                if k in keys:
+                                    return v
+                                res = _search_for_key(v, keys)
+                                if res is not None:
+                                    return res
+                        elif isinstance(obj, list):
+                            for item in obj:
+                                res = _search_for_key(item, keys)
+                                if res is not None:
+                                    return res
+                        return None
+
+                    val = None
+                    if isinstance(run, dict) and 'output' in run:
+                        out = run['output']
+                        items = out if isinstance(out, list) else None
+                        val = _search_for_key(out, ('xeneta_index', 'index', 'value')) if out is not None else None
+                    else:
+                        items = run if isinstance(run, list) else None
+                        val = _search_for_key(run, ('xeneta_index', 'index', 'value'))
+
+                    if items:
+                        count = len(items)
+                        quotes = [it.get('quotesCount') for it in items if isinstance(it, dict) and isinstance(it.get('quotesCount'), (int, float))]
+                        mileages = [it.get('mileage') for it in items if isinstance(it, dict) and isinstance(it.get('mileage'), (int, float))]
+                        avg_quotes = (sum(quotes) / len(quotes)) if quotes else None
+                        avg_mileage = (sum(mileages) / len(mileages)) if mileages else None
+                        proxy = avg_quotes if avg_quotes is not None else avg_mileage
+                        return {
+                            'date': date or str(datetime.date.today()),
+                            'xeneta_index': float(proxy) if proxy is not None else None,
+                            'source': f'apify:{actor_id}',
+                            'apify_items_count': count,
+                            'apify_avg_quotes': avg_quotes,
+                            'apify_avg_mileage': avg_mileage,
+                            'apify_sample': items[:5],
+                            'apify_items': items
+                        }
+
+                    if val is not None:
                         try:
-                            val = float(run)
-                            return {'date': date or str(datetime.date.today()), 'xeneta_index': val, 'source': f'apify:{actor_id}'}
+                            v = float(val)
+                            return {'date': date or str(datetime.date.today()), 'xeneta_index': v, 'source': f'apify:{actor_id}'}
                         except Exception:
                             pass
             except Exception:
@@ -341,6 +532,29 @@ class ReportingAgent:
         os.makedirs(self.out_dir, exist_ok=True)
 
     def generate_report(self, analysis: Dict[str, Any]) -> str:
+        # If OpenRouter is configured, ask it to analyze the analysis and return anomalies/summaries
+        try:
+            or_adapter = OpenRouterAdapter()
+            if or_adapter.available():
+                import json
+                prompt = (
+                    "Given the following analysis JSON, identify any anomalies, unexpected patterns, "
+                    "and concise recommendations. Return only a JSON object with keys: anomalies (list), "
+                    "summary (string).\n\nAnalysis:\n" + json.dumps(analysis, default=str)
+                )
+                resp = or_adapter.generate(prompt, model=os.environ.get('OPENROUTER_MODEL'))
+                # try to parse JSON from response
+                try:
+                    import re, json
+                    m = re.search(r"\{.*\}", resp, re.S)
+                    if m:
+                        j = json.loads(m.group(0))
+                        # attach to analysis
+                        analysis['llm_anomalies'] = j
+                except Exception:
+                    logger.debug('Failed to parse OpenRouter response for anomalies')
+        except Exception:
+            logger.debug('OpenRouter anomaly analysis not available')
         ts = datetime.datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')
         path = os.path.join(self.out_dir, f'report_{ts}.json')
         # augment analysis with metadata
